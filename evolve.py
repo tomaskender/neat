@@ -57,9 +57,8 @@ def eval_genome(genome, config):
     if len(stats) != len(BENCHMARK_METRICS):
         return Exception(f"Some stats were not found in output. Expected {BENCHMARK_METRICS}, found {stats}.")
 
-    # use inverted time as fitness
     # TODO experiment with different subgroups of collected metrics as fitness
-    fitness = -stats["time"]
+    fitness = stats["reachable-methods"]
     return fitness
 
 
