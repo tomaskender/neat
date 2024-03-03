@@ -1,0 +1,8 @@
+neat-python~=0.92
+matplotlib~=3.8.0
+numpy~=1.26.2
+graphviz==0.20.1
+uvicorn~=0.27.1
+fastapi~=0.103.0
+pillow~=10.0.1
+python-dotenv~=1.0.1
