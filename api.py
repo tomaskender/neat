@@ -1,11 +1,11 @@
+import asyncio
 import logging
 import socket
-import time
 
 from fastapi import FastAPI, HTTPException
-from typing import List
-import uvicorn
-
+from typing import Dict
+from hypercorn.asyncio import serve
+from hypercorn.config import Config
 
 ARGS_REQUIRED = 4
 logging.basicConfig(level=logging.DEBUG)
@@ -14,12 +14,25 @@ LOGGER = logging.getLogger("API")
 
 def create_app(network):
     app = FastAPI()
+    app.shutdown = asyncio.Event()
+    app.stats = {'inlined': 0, 'not_inlined': 0}
 
     @app.post(f"/predict")
-    async def predict(args: List[int]):
-        if len(args) != ARGS_REQUIRED:
+    async def predict(data: Dict[str, str]):
+        if len(data) != ARGS_REQUIRED:
             raise HTTPException(500, f"Please provide exactly {ARGS_REQUIRED} arguments.")
-        return {"result": network.activate(args)}
+
+        decision = network.activate([int(d) for d in data.values()])
+
+        if decision:
+            app.stats['inlined'] += 1
+        else:
+            app.stats['not_inlined'] += 1
+        return {"result": decision}
+
+    @app.post(f"/test")
+    async def test():
+        return {"result": True}
 
     return app
 
@@ -32,24 +45,37 @@ def find_available_port():
     return port
 
 
-def launch_service(network):
+async def deploy_endpoint(app):
     global LOGGER
     #port = find_available_port()
     port = 8001
     LOGGER.info(f"Launching API endpoint on port {port}")
-    app = create_app(network)
-    uvicorn.run(app=app, port=port)
-    return port
+    config = Config()
+    config.bind = ["0.0.0.0:" + str(port)]
+    config.accesslog = "-"
+    return await serve(app, config, shutdown_trigger=app.shutdown.wait)
+
+
+def remove_endpoint(app):
+    global LOGGER
+    app.shutdown.set()
+    LOGGER.info("Endpoint has been successfully closed.")
 
 
 class MockNetwork:
     def activate(self, _):
-        return True
+        return False
 
 
 if __name__ == "__main__":
     LOGGER.info("Starting API with mock network.")
-    launch_service(MockNetwork())
+    app = create_app(MockNetwork())
+    task = deploy_endpoint(app)
+    LOGGER.info("Endpoint with mock network has been deployed.")
 
-    while 1:
-        time.sleep(1)
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(task)
+    except KeyboardInterrupt:
+        remove_endpoint(app)
+        LOGGER.info(f"Inlining stats: {app.stats}")
