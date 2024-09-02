@@ -19,26 +19,22 @@ BENCH_RESULTS = Path(HOME_DIR) / "bench-results.json"
 BENCHMARKS = ["akka-uct", "db-shootout", "dotty", "finagle-chirper", "finagle-http", "fj-kmeans", "future-genetic", "mnemonics", "par-mnemonics", "philosophers", "reactors", "rx-scrabble", "scala-doku", "scala-kmeans", "scala-stm-bench7", "scrabble"]
 BENCHMARK_METRICS = ["time", "reachable-methods", "binary-size", "max-rss"]
 
+logging.basicConfig(level=logging.DEBUG)
+LOGGER = logging.getLogger("NEAT evolution")
+
 
 def get_benchmark_cmd(benchmark):
     return "mx --env ni-ce benchmark \"renaissance-native-image:{}\"  --  --jvm=native-image --jvm-config=default-ce".format(benchmark)
 
 
-logging.basicConfig(level=logging.DEBUG)
-LOGGER = logging.getLogger("NEAT evolution")
-
-app = None
 async def build_network_and_deploy(genome, config):
-    global app
     net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    # open api endpoint
     app = create_app(net)
     await deploy_endpoint(app)
 
 
 def eval_genome(genome, config):
-    global app
     loop = asyncio.new_event_loop()
     task = loop.create_task(build_network_and_deploy(genome, config))
     thread = threading.Thread(target=loop.run_forever)
@@ -52,32 +48,30 @@ def eval_genome(genome, config):
     completed_process = subprocess.run(
         f"{EXPORT_JAVA_HOME} && cd {HOME_DIR} && {get_benchmark_cmd(BENCHMARKS[0])}",
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
         shell=True
     )
     LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
-    LOGGER.info(f"Inliner stats: {app.stats}")
-    if completed_process.returncode != 0:
-        LOGGER.info(f"Benchmarking subprocess completed with error:\n{completed_process.stderr}")
 
     # Remove endpoint after benchmarking is done
-    remove_endpoint(app)
+    remove_endpoint()
     task.cancel()
 
     stats = {}
-    with open(BENCH_RESULTS) as json_file:
-        data = json.load(json_file)
+    if completed_process.returncode == 0:
+        with open(BENCH_RESULTS) as json_file:
+            data = json.load(json_file)
 
-        for q in data["queries"]:
-            cols = ["metric.name", "metric.object"]
-            for col in cols:
-                if col in q and q[col] in BENCHMARK_METRICS:
-                    stats[q[col]] = q["metric.value"]
-    logging.debug(f"{genome} produced following benchmark stats: {stats}")
-
-    if len(stats) != len(BENCHMARK_METRICS):
-        return Exception(f"Some stats were not found in output. Expected {BENCHMARK_METRICS}, found {stats}.")
+            for q in data["queries"]:
+                cols = ["metric.name", "metric.object"]
+                for col in cols:
+                    if col in q and q[col] in BENCHMARK_METRICS:
+                        stats[q[col]] = q["metric.value"]
+        logging.debug(f"{genome} produced following benchmark stats: {stats}")
+    else:
+        LOGGER.info(f"Benchmarking subprocess completed with error:\n{completed_process.stdout}")
+        stats = dict.fromkeys(BENCHMARK_METRICS, 999_999_999)
 
     # TODO experiment with different subgroups of collected metrics as fitness
     fitness = stats["reachable-methods"]

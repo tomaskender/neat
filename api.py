@@ -2,6 +2,7 @@ import asyncio
 import logging
 import socket
 
+import requests
 from fastapi import FastAPI, HTTPException
 from typing import Dict
 from hypercorn.asyncio import serve
@@ -22,7 +23,7 @@ def create_app(network):
         if len(data) != ARGS_REQUIRED:
             raise HTTPException(500, f"Please provide exactly {ARGS_REQUIRED} arguments.")
 
-        decision = network.activate([int(d) for d in data.values()])
+        decision = network.activate([int(d) for d in data.values()])[0] >= 0.5
 
         if decision:
             app.stats['inlined'] += 1
@@ -33,6 +34,11 @@ def create_app(network):
     @app.post(f"/test")
     async def test():
         return {"result": True}
+
+    @app.post(f"/shutdown")
+    async def shutdown():
+        LOGGER.info("Inlining stats: %s", app.stats)
+        app.shutdown.set()
 
     return app
 
@@ -53,18 +59,19 @@ async def deploy_endpoint(app):
     config = Config()
     config.bind = ["0.0.0.0:" + str(port)]
     config.accesslog = "-"
+    config.loglevel = "CRITICAL"  # turn off logging of individual requests
     return await serve(app, config, shutdown_trigger=app.shutdown.wait)
 
 
-def remove_endpoint(app):
+def remove_endpoint():
     global LOGGER
-    app.shutdown.set()
+    requests.post("http://0.0.0.0:8001/shutdown")
     LOGGER.info("Endpoint has been successfully closed.")
 
 
 class MockNetwork:
     def activate(self, _):
-        return False
+        return list([1.0])  # True
 
 
 if __name__ == "__main__":
@@ -77,5 +84,4 @@ if __name__ == "__main__":
         loop = asyncio.get_event_loop()
         loop.run_until_complete(task)
     except KeyboardInterrupt:
-        remove_endpoint(app)
-        LOGGER.info(f"Inlining stats: {app.stats}")
+        remove_endpoint()
