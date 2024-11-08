@@ -4,7 +4,7 @@ import socket
 
 import requests
 from fastapi import FastAPI, HTTPException
-from typing import Dict
+from typing import Dict, Any
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 
@@ -19,7 +19,7 @@ def create_app(network):
     app.stats = {'inlined': 0, 'not_inlined': 0}
 
     @app.post(f"/predict")
-    async def predict(data: Dict[str, str]):
+    async def predict(data: Dict[str, Any]):
         if len(data) != ARGS_REQUIRED:
             raise HTTPException(500, f"Please provide exactly {ARGS_REQUIRED} arguments.")
 
@@ -31,7 +31,7 @@ def create_app(network):
             app.stats['not_inlined'] += 1
         return {"result": decision}
 
-    @app.post(f"/test")
+    @app.get(f"/test")
     async def test():
         return {"result": True}
 

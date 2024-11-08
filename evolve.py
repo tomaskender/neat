@@ -1,5 +1,7 @@
 import asyncio
+import sys
 import threading
+import time
 
 from dotenv import load_dotenv
 import json
@@ -13,7 +15,6 @@ import visualize
 from api import deploy_endpoint, remove_endpoint, create_app
 
 load_dotenv(override=True)
-EXPORT_JAVA_HOME = "export JAVA_HOME=" + os.getenv("JAVA_HOME")
 HOME_DIR = Path(os.getenv("GRAAL_REPO_DIR")) / "vm"
 BENCH_RESULTS = Path(HOME_DIR) / "bench-results.json"
 BENCHMARKS = ["akka-uct", "db-shootout", "dotty", "finagle-chirper", "finagle-http", "fj-kmeans", "future-genetic", "mnemonics", "par-mnemonics", "philosophers", "reactors", "rx-scrabble", "scala-doku", "scala-kmeans", "scala-stm-bench7", "scrabble"]
@@ -24,7 +25,7 @@ LOGGER = logging.getLogger("NEAT evolution")
 
 
 def get_benchmark_cmd(benchmark):
-    return "mx --env ni-ce benchmark \"renaissance-native-image:{}\"  --  --jvm=native-image --jvm-config=default-ce".format(benchmark)
+    return "mx --java-home={} --env ni-ce benchmark \"renaissance-native-image:{}\"  --  --jvm=native-image --jvm-config=default-ce -Dnative-image.benchmark.extra-image-build-argument=--parallelism=12".format(os.getenv("JAVA_HOME"), benchmark)
 
 
 async def build_network_and_deploy(genome, config):
@@ -43,16 +44,19 @@ def eval_genome(genome, config):
     # delete previous benchmark log
     BENCH_RESULTS.unlink(missing_ok=True)
 
+    start = time.perf_counter()
+
     # run benchmark, graal inliner uses endpoint running on `server.config.port`
     LOGGER.info(f"Launching benchmark {BENCHMARKS[0]}")
     completed_process = subprocess.run(
-        f"{EXPORT_JAVA_HOME} && cd {HOME_DIR} && {get_benchmark_cmd(BENCHMARKS[0])}",
-        stdout=subprocess.PIPE,
+        f"cd {HOME_DIR} && {get_benchmark_cmd(BENCHMARKS[0])}",
+        stdout=sys.stdout,
         stderr=subprocess.STDOUT,
         text=True,
         shell=True
     )
     LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
+    LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
     # Remove endpoint after benchmarking is done
     remove_endpoint()
@@ -96,7 +100,7 @@ def run(config_file):
     pe = neat.ThreadedEvaluator(1, eval_genome)
 
     LOGGER.info("Running simulation.")
-    winner = p.run(pe.evaluate, 10)
+    winner = p.run(pe.evaluate, 5)
 
     LOGGER.info(f"Best genome: {winner}")
 
