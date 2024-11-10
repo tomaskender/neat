@@ -1,20 +1,21 @@
 import asyncio
-import sys
-import threading
-import time
-
+from distutils.util import strtobool
 from dotenv import load_dotenv
 import json
 import logging
 import neat
 import os
 from pathlib import Path
+import sys
 import subprocess
-import visualize
+import threading
+import time
 
-from api import deploy_endpoint, remove_endpoint, create_app
+from api import deploy_endpoint, create_app, remove_endpoint
+from gnn.graph_network import GraphNetwork
 
 load_dotenv(override=True)
+USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
 HOME_DIR = Path(os.getenv("GRAAL_REPO_DIR")) / "vm"
 BENCH_RESULTS = Path(HOME_DIR) / "bench-results.json"
 BENCHMARKS = ["akka-uct", "db-shootout", "dotty", "finagle-chirper", "finagle-http", "fj-kmeans", "future-genetic", "mnemonics", "par-mnemonics", "philosophers", "reactors", "rx-scrabble", "scala-doku", "scala-kmeans", "scala-stm-bench7", "scrabble"]
@@ -29,7 +30,10 @@ def get_benchmark_cmd(benchmark):
 
 
 async def build_network_and_deploy(genome, config):
-    net = neat.nn.FeedForwardNetwork.create(genome, config)
+    if USE_GRAPHS:
+        net = GraphNetwork.create(genome, config)
+    else:
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
 
     app = create_app(net)
     await deploy_endpoint(app)
@@ -104,12 +108,15 @@ def run(config_file):
 
     LOGGER.info(f"Best genome: {winner}")
 
-    node_names = {-1: 'A', -2: 'B', -3: 'C', -4: 'D', 0: 'Inline'}
-    visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
+    # node_names = {-1: 'A', -2: 'B', -3: 'C', -4: 'D', 0: 'Inline'}
+    # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
+    # visualize.plot_stats(stats, ylog=False, view=True)
+    # visualize.plot_species(stats, view=True)
 
 
 if __name__ == '__main__':
-    config_path = Path(__file__).parent / 'config-feedforward'
+    if USE_GRAPHS:
+        config_path = Path(__file__).parent / 'config-gnn'
+    else:
+        config_path = Path(__file__).parent / 'config-feedforward'
     run(config_path)
