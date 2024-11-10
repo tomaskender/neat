@@ -35,7 +35,7 @@ async def build_network_and_deploy(genome, config):
     else:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    app = create_app(net)
+    app = create_app(net, USE_GRAPHS)
     await deploy_endpoint(app)
 
 

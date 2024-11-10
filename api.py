@@ -1,29 +1,40 @@
 import asyncio
-import logging
-import socket
-
-import requests
+from distutils.util import strtobool
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from typing import Dict, Any
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
+import logging
+import os
+import requests
+import socket
+from typing import Dict, Any
 
-ARGS_REQUIRED = 4
+
+load_dotenv(override=True)
+USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
+PARAMETERS_REQUIRED = 4 # should be the same as input parameters in NEAT config
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("API")
 
 
-def create_app(network):
+def create_app(network, use_graphs):
     app = FastAPI()
     app.shutdown = asyncio.Event()
     app.stats = {'inlined': 0, 'not_inlined': 0}
 
     @app.post(f"/predict")
     async def predict(data: Dict[str, Any]):
-        if len(data) != ARGS_REQUIRED:
-            raise HTTPException(500, f"Please provide exactly {ARGS_REQUIRED} arguments.")
+        if use_graphs:
+            if len(data) != 2 or not data["nodes"] or not data["edges"]:
+                raise HTTPException(500, f"Payload should contain \"nodes\" and \"edges\" keys.")
 
-        decision = network.activate([int(d) for d in data.values()])[0] >= 0.5
+            decision = network.activate(data["nodes"], data["edges"])[0] >= 0.5
+        else:
+            if len(data) != PARAMETERS_REQUIRED:
+                raise HTTPException(500, f"Please provide exactly {PARAMETERS_REQUIRED} parameters.")
+
+            decision = network.activate([int(d) for d in data.values()])[0] >= 0.5
 
         if decision:
             app.stats['inlined'] += 1
@@ -76,7 +87,7 @@ class MockNetwork:
 
 if __name__ == "__main__":
     LOGGER.info("Starting API with mock network.")
-    app = create_app(MockNetwork())
+    app = create_app(MockNetwork(), USE_GRAPHS)
     task = deploy_endpoint(app)
     LOGGER.info("Endpoint with mock network has been deployed.")
 
