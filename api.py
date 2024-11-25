@@ -22,6 +22,7 @@ def create_app(network, use_graphs):
     app = FastAPI()
     app.shutdown = asyncio.Event()
     app.stats = {'inlined': 0, 'not_inlined': 0}
+    LOGGER.info("Creating endpoint in " + ("graph input mode" if use_graphs else "legacy baseline mode"))
 
     @app.post(f"/predict")
     async def predict(data: Dict[str, Any]):
