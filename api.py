@@ -82,7 +82,7 @@ def remove_endpoint():
 
 
 class MockNetwork:
-    def activate(self, _):
+    def activate(self, *_):
         return list([1.0])  # True
 
 
