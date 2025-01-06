@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 import logging
+import numpy as np
 import os
 import requests
 import socket
@@ -13,7 +14,8 @@ from typing import Dict, Any
 
 load_dotenv(override=True)
 USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
-PARAMETERS_REQUIRED = 4 # should be the same as input parameters in NEAT config
+PARAMETERS_REQUIRED = 158 # should be the same as input parameters in NEAT config
+NODE_CLASS_ENCODINGS = np.identity(PARAMETERS_REQUIRED)
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("API")
 
@@ -22,15 +24,19 @@ def create_app(network, use_graphs):
     app = FastAPI()
     app.shutdown = asyncio.Event()
     app.stats = {'inlined': 0, 'not_inlined': 0}
+    # app.nodes = dict.fromkeys(list(range(PARAMETERS_REQUIRED)), 0)
     LOGGER.info("Creating endpoint in " + ("graph input mode" if use_graphs else "legacy baseline mode"))
 
     @app.post(f"/predict")
     async def predict(data: Dict[str, Any]):
+        # for n in data["nodes"]:
+        #     app.nodes[n["nodeType"]] = app.nodes.get(n["nodeType"], 0) + 1
         if use_graphs:
             if len(data) != 2 or not data["nodes"] or not data["edges"]:
                 raise HTTPException(500, f"Payload should contain \"nodes\" and \"edges\" keys.")
-
-            decision = network.activate(data["nodes"], data["edges"])[0] >= 0.5
+            nodes_in = np.array([NODE_CLASS_ENCODINGS[int(n["nodeType"])] for n in data["nodes"]])
+            edges_in = np.array(data["edges"]).T
+            decision = network.activate(nodes_in, edges_in)[0] >= 0.5
         else:
             if len(data) != PARAMETERS_REQUIRED:
                 raise HTTPException(500, f"Please provide exactly {PARAMETERS_REQUIRED} parameters.")
@@ -77,6 +83,7 @@ async def deploy_endpoint(app):
 
 def remove_endpoint():
     global LOGGER
+    LOGGER.info("Shutting down endpoint..")
     requests.post("http://0.0.0.0:8001/shutdown")
     LOGGER.info("Endpoint has been successfully closed.")
 

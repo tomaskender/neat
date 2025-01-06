@@ -6,10 +6,14 @@ import logging
 import neat
 import os
 from pathlib import Path
+import requests
+from requests.adapters import HTTPAdapter
 import sys
 import subprocess
 import threading
 import time
+
+from urllib3 import Retry
 
 from api import deploy_endpoint, create_app, remove_endpoint
 from gnn.graph_network import GraphNetwork
@@ -40,6 +44,7 @@ async def build_network_and_deploy(genome, config):
 
 
 def eval_genome(genome, config):
+    LOGGER.info(f"Scheduling network endpoint deployment")
     loop = asyncio.new_event_loop()
     task = loop.create_task(build_network_and_deploy(genome, config))
     thread = threading.Thread(target=loop.run_forever)
@@ -48,10 +53,22 @@ def eval_genome(genome, config):
     # delete previous benchmark log
     BENCH_RESULTS.unlink(missing_ok=True)
 
+    LOGGER.info(f"Waiting for endpoint to come online..")
+
+    s = requests.Session()
+    retries = Retry(total=5,
+                    backoff_factor=2,
+                    status_forcelist=[ 500, 502, 503, 504 ])
+    s.mount('http://', HTTPAdapter(max_retries=retries))
+    
+    if s.get("http://0.0.0.0:8001/test").status_code != 200:
+        LOGGER.info("Could not verify endpoint with a test request")
+        exit(1)
+
     start = time.perf_counter()
 
     # run benchmark, graal inliner uses endpoint running on `server.config.port`
-    LOGGER.info(f"Launching benchmark {BENCHMARKS[0]}")
+    LOGGER.info(f"Verified connectivity to endpoint, launching benchmark {BENCHMARKS[0]}")
     completed_process = subprocess.run(
         f"cd {HOME_DIR} && {get_benchmark_cmd(BENCHMARKS[0])}",
         stdout=sys.stdout,
@@ -59,6 +76,8 @@ def eval_genome(genome, config):
         text=True,
         shell=True
     )
+    # while 1:
+    #     time.sleep(1)
     LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
     LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
