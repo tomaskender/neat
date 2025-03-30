@@ -28,9 +28,21 @@ class GraphNetwork(object):
         return out.cpu().numpy()[0].tolist()
 
 
+
+    def ensure_length_n(self, arr, n):
+        if len(arr) < n:
+            arr = np.tile(arr, (n // len(arr)) + 1)[:n]
+        elif len(arr) > n:
+            arr = arr[:n]
+        return arr
+
     def set_parameters(self, genome_config, genome):
-        new_weight_values = torch.tensor(np.array([conn.weight for conn in list(genome.connections.values())]).reshape((genome_config.num_outputs, genome_config.num_inputs)), dtype=torch.float).to(self.device)
-        new_bias_values = torch.tensor([node.bias for node in list(genome.nodes.values())], dtype=torch.float).to(self.device)
+        # TODO find reason of NEAT sometimes returning 355 or 357 connections; happens consistently in 24th generated genome
+        weights = self.ensure_length_n(np.array([conn.weight for conn in list(genome.connections.values())]), 356)
+        biases = self.ensure_length_n(np.array([node.bias for node in list(genome.nodes.values())]), 356)
+
+        new_weight_values = torch.tensor(weights.reshape((genome_config.num_outputs, genome_config.num_inputs)), dtype=torch.float).to(self.device)
+        new_bias_values = torch.tensor(biases, dtype=torch.float).to(self.device)
         self.model.conv1.lin.weight = torch.nn.Parameter(new_weight_values)
         self.model.conv1.bias = torch.nn.Parameter(new_bias_values)
 
