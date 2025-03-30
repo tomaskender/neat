@@ -15,9 +15,11 @@ from typing import Dict, Any
 
 load_dotenv(override=True)
 USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
-# PARAMETERS_REQUIRED = 4
-# PARAMETERS_REQUIRED = 51
-PARAMETERS_REQUIRED = 178
+if USE_GRAPHS:
+    # PARAMETERS_REQUIRED = 51
+    PARAMETERS_REQUIRED = 178
+else:
+    PARAMETERS_REQUIRED = 4
 NODE_CLASS_ENCODINGS = np.identity(PARAMETERS_REQUIRED)
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("API")
