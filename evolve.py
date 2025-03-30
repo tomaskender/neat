@@ -33,22 +33,24 @@ def get_benchmark_cmd(benchmark):
     return "mx --java-home={} --env ni-ce benchmark \"renaissance-native-image:{}\"  --  --jvm=native-image --jvm-config=default-ce -Dnative-image.benchmark.extra-image-build-argument=--parallelism=12".format(os.getenv("JAVA_HOME"), benchmark)
 
 
-async def build_network_and_deploy(genome, config):
+async def build_network_and_deploy(genome, config, port):
     if USE_GRAPHS:
         net = GraphNetwork.create(genome, config)
     else:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
 
     app = create_app(net, USE_GRAPHS)
-    await deploy_endpoint(app)
+    await deploy_endpoint(app, port)
 
 
 def eval_genome(genome, config):
     LOGGER.info(f"Scheduling network endpoint deployment")
+    port = 8001
     loop = asyncio.new_event_loop()
-    task = loop.create_task(build_network_and_deploy(genome, config))
+    task = loop.create_task(build_network_and_deploy(genome, config, port))
     thread = threading.Thread(target=loop.run_forever)
     thread.start()
+    time.sleep(2)
 
     # delete previous benchmark log
     BENCH_RESULTS.unlink(missing_ok=True)
@@ -61,7 +63,7 @@ def eval_genome(genome, config):
                     status_forcelist=[ 500, 502, 503, 504 ])
     s.mount('http://', HTTPAdapter(max_retries=retries))
     
-    if s.get("http://0.0.0.0:8001/test").status_code != 200:
+    if s.get(f"http://0.0.0.0:{port}/test").status_code != 200:
         LOGGER.info("Could not verify endpoint with a test request")
         exit(1)
 
@@ -82,8 +84,9 @@ def eval_genome(genome, config):
     LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
     # Remove endpoint after benchmarking is done
-    remove_endpoint()
+    remove_endpoint(port)
     task.cancel()
+    time.sleep(2)
 
     stats = {}
     if completed_process.returncode == 0:

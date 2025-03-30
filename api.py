@@ -85,10 +85,8 @@ def find_available_port():
     return port
 
 
-async def deploy_endpoint(app):
+async def deploy_endpoint(app, port):
     global LOGGER
-    #port = find_available_port()
-    port = 8001
     LOGGER.info(f"Launching API endpoint on port {port}")
     config = Config()
     config.bind = ["0.0.0.0:" + str(port)]
@@ -97,10 +95,10 @@ async def deploy_endpoint(app):
     return await serve(app, config, shutdown_trigger=app.shutdown.wait)
 
 
-def remove_endpoint():
+def remove_endpoint(port):
     global LOGGER
     LOGGER.info("Shutting down endpoint..")
-    requests.post("http://0.0.0.0:8001/shutdown")
+    requests.post(f"http://0.0.0.0:{port}/shutdown")
     LOGGER.info("Endpoint has been successfully closed.")
 
 
@@ -111,12 +109,13 @@ class MockNetwork:
 
 if __name__ == "__main__":
     LOGGER.info("Starting API with mock network.")
+    port = 8001
     app = create_app(MockNetwork(), USE_GRAPHS)
-    task = deploy_endpoint(app)
+    task = deploy_endpoint(app, port)
     LOGGER.info("Endpoint with mock network has been deployed.")
 
     try:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(task)
     except KeyboardInterrupt:
-        remove_endpoint()
+        remove_endpoint(port)
