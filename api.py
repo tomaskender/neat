@@ -1,4 +1,5 @@
 import asyncio
+import time
 from distutils.util import strtobool
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -14,7 +15,9 @@ from typing import Dict, Any
 
 load_dotenv(override=True)
 USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
-PARAMETERS_REQUIRED = 158 # should be the same as input parameters in NEAT config
+# PARAMETERS_REQUIRED = 4
+# PARAMETERS_REQUIRED = 51
+PARAMETERS_REQUIRED = 178
 NODE_CLASS_ENCODINGS = np.identity(PARAMETERS_REQUIRED)
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("API")
@@ -31,17 +34,30 @@ def create_app(network, use_graphs):
     async def predict(data: Dict[str, Any]):
         # for n in data["nodes"]:
         #     app.nodes[n["nodeType"]] = app.nodes.get(n["nodeType"], 0) + 1
+        # start = time.perf_counter_ns()
         if use_graphs:
             if len(data) != 2 or not data["nodes"] or not data["edges"]:
                 raise HTTPException(500, f"Payload should contain \"nodes\" and \"edges\" keys.")
+            # conversion_start = time.perf_counter_ns()
             nodes_in = np.array([NODE_CLASS_ENCODINGS[int(n["nodeType"])] for n in data["nodes"]])
             edges_in = np.array(data["edges"]).T
-            decision = network.activate(nodes_in, edges_in)[0] >= 0.5
+            # LOGGER.info(f"json to np array conversion: {(time.perf_counter_ns()-conversion_start)/1000000} ms")
+            try:
+                decision = network.activate(nodes_in, edges_in)[0] >= 0.5
+            except Exception as e:
+                LOGGER.warning(e)
+                raise e
+            # LOGGER.info(f"Model inference took: {(time.perf_counter_ns()-start)/1000000} ms for {len(data['nodes'])} nodes")
         else:
             if len(data) != PARAMETERS_REQUIRED:
                 raise HTTPException(500, f"Please provide exactly {PARAMETERS_REQUIRED} parameters.")
 
-            decision = network.activate([int(d) for d in data.values()])[0] >= 0.5
+            try:
+                decision = network.activate([int(d) for d in data.values()])[0] >= 0.5
+            except Exception as e:
+                LOGGER.warning(e)
+                raise e
+            # LOGGER.info(f"Model inference took: {(time.perf_counter_ns()-start)/1000000} ms")
 
         if decision:
             app.stats['inlined'] += 1

@@ -1,3 +1,4 @@
+# import time
 import logging
 import numpy as np
 import torch
@@ -12,14 +13,18 @@ LOGGER = logging.getLogger("GraphNetwork")
 
 class GraphNetwork(object):
     def __init__(self, genome_config):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cpu') # cpu has been about 300ms faster than gpu
         self.model = GCN(genome_config.num_inputs, genome_config.num_hidden, genome_config.num_outputs).to(self.device)
 
 
     def activate(self, nodes: np.ndarray, edges: np.ndarray):
+        # data_start = time.perf_counter_ns()
         data = Data(x=torch.tensor(nodes, dtype=torch.float), edge_index=torch.tensor(edges, dtype=torch.int8)).to(self.device)
+        # LOGGER.info(f"tensor creation: {(time.perf_counter_ns()-data_start)/1000000} ms")
+        # infer_start = time.perf_counter_ns()
         with torch.no_grad():
             out = self.model(data)
+        # LOGGER.info(f"inference: {(time.perf_counter_ns()-infer_start)/1000000} ms")
         return out.cpu().numpy()[0].tolist()
 
 
