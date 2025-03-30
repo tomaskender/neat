@@ -105,7 +105,9 @@ def eval_genome(genome, config):
 
     # TODO experiment with different subgroups of collected metrics as fitness
     fitness = stats["reachable-methods"]
-    return fitness
+
+    # workaround due to NEAT ignoring activation setting in config; always perform fitness maximization
+    return -fitness
 
 
 def run(config_file):
