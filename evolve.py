@@ -128,7 +128,7 @@ def run(config_file):
     pe = neat.ThreadedEvaluator(1, eval_genome)
 
     LOGGER.info("Running simulation.")
-    winner = p.run(pe.evaluate, 5)
+    winner = p.run(pe.evaluate, 7)
 
     LOGGER.info(f"Best genome: {winner}")
 
