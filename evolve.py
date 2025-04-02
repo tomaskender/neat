@@ -22,7 +22,8 @@ load_dotenv(override=True)
 USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
 HOME_DIR = Path(os.getenv("GRAAL_REPO_DIR")) / "vm"
 BENCH_RESULTS = Path(HOME_DIR) / "bench-results.json"
-BENCHMARKS = ["akka-uct", "db-shootout", "dotty", "finagle-chirper", "finagle-http", "fj-kmeans", "future-genetic", "mnemonics", "par-mnemonics", "philosophers", "reactors", "rx-scrabble", "scala-doku", "scala-kmeans", "scala-stm-bench7", "scrabble"]
+# BENCHMARKS = ["akka-uct", "db-shootout", "dotty", "finagle-chirper", "finagle-http", "fj-kmeans", "future-genetic", "mnemonics", "par-mnemonics", "philosophers", "reactors", "rx-scrabble", "scala-doku", "scala-kmeans", "scala-stm-bench7", "scrabble"]
+BENCHMARKS = ["akka-uct", "db-shootout", "dotty"]
 BENCHMARK_METRICS = ["time", "reachable-methods", "binary-size", "max-rss"]
 
 logging.basicConfig(level=logging.DEBUG)
@@ -52,9 +53,6 @@ def eval_genome(genome, config):
     thread.start()
     time.sleep(2)
 
-    # delete previous benchmark log
-    BENCH_RESULTS.unlink(missing_ok=True)
-
     LOGGER.info(f"Waiting for endpoint to come online..")
 
     s = requests.Session()
@@ -66,45 +64,52 @@ def eval_genome(genome, config):
     if s.get(f"http://0.0.0.0:{port}/test").status_code != 200:
         LOGGER.info("Could not verify endpoint with a test request")
         exit(1)
+    LOGGER.info("Verified connectivity to endpoint")
 
     start = time.perf_counter()
+    fitness = 0
 
-    # run benchmark, graal inliner uses endpoint running on `server.config.port`
-    LOGGER.info(f"Verified connectivity to endpoint, launching benchmark {BENCHMARKS[0]}")
-    completed_process = subprocess.run(
-        f"cd {HOME_DIR} && {get_benchmark_cmd(BENCHMARKS[0])}",
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-        text=True,
-        shell=True
-    )
-    # while 1:
-    #     time.sleep(1)
-    LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
-    LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
+    for benchmark in BENCHMARKS:
+        # run benchmark, graal inliner uses endpoint running on `server.config.port`
+        LOGGER.info(f"Launching benchmark {benchmark}")
+
+        # delete previous benchmark log
+        BENCH_RESULTS.unlink(missing_ok=True)
+
+        completed_process = subprocess.run(
+            f"cd {HOME_DIR} && {get_benchmark_cmd(benchmark)}",
+            stdout=sys.stdout,
+            stderr=subprocess.STDOUT,
+            text=True,
+            shell=True
+        )
+        # while 1:
+        #     time.sleep(1)
+        LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
+        LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
+
+        stats = {}
+        if completed_process.returncode == 0:
+            with open(BENCH_RESULTS) as json_file:
+                data = json.load(json_file)
+
+                for q in data["queries"]:
+                    cols = ["metric.name", "metric.object"]
+                    for col in cols:
+                        if col in q and q[col] in BENCHMARK_METRICS:
+                            stats[q[col]] = q["metric.value"]
+            logging.debug(f"{genome} produced following benchmark stats: {stats}")
+        else:
+            LOGGER.info(f"Benchmarking subprocess completed with error:\n{completed_process.stdout}")
+            stats = dict.fromkeys(BENCHMARK_METRICS, 999_999_999)
+
+        fitness += stats["reachable-methods"]
+
 
     # Remove endpoint after benchmarking is done
     remove_endpoint(port)
     task.cancel()
     time.sleep(2)
-
-    stats = {}
-    if completed_process.returncode == 0:
-        with open(BENCH_RESULTS) as json_file:
-            data = json.load(json_file)
-
-            for q in data["queries"]:
-                cols = ["metric.name", "metric.object"]
-                for col in cols:
-                    if col in q and q[col] in BENCHMARK_METRICS:
-                        stats[q[col]] = q["metric.value"]
-        logging.debug(f"{genome} produced following benchmark stats: {stats}")
-    else:
-        LOGGER.info(f"Benchmarking subprocess completed with error:\n{completed_process.stdout}")
-        stats = dict.fromkeys(BENCHMARK_METRICS, 999_999_999)
-
-    # TODO experiment with different subgroups of collected metrics as fitness
-    fitness = stats["reachable-methods"]
 
     # workaround due to NEAT ignoring activation setting in config; always perform fitness maximization
     return -fitness
@@ -128,7 +133,7 @@ def run(config_file):
     pe = neat.ThreadedEvaluator(1, eval_genome)
 
     LOGGER.info("Running simulation.")
-    winner = p.run(pe.evaluate, 7)
+    winner = p.run(pe.evaluate, 5)
 
     LOGGER.info(f"Best genome: {winner}")
 
