@@ -98,7 +98,7 @@ def eval_genome(genome, config):
                     for col in cols:
                         if col in q and q[col] in BENCHMARK_METRICS:
                             stats[q[col]] = q["metric.value"]
-            logging.debug(f"{genome} produced following benchmark stats: {stats}")
+            logging.debug(f"{genome} produced following benchmark stats for {benchmark}: {stats}")
         else:
             LOGGER.info(f"Benchmarking subprocess completed with error:\n{completed_process.stdout}")
             stats = dict.fromkeys(BENCHMARK_METRICS, 999_999_999)
