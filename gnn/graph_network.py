@@ -37,19 +37,20 @@ class GraphNetwork(object):
         return arr
 
     def set_parameters(self, genome_config, genome):
-        # TODO find reason of NEAT sometimes returning 355 or 357 connections; happens consistently in 24th generated genome
-        weights = self.ensure_length_n(np.array([conn.weight for conn in list(genome.connections.values())]), 356)
-        biases = self.ensure_length_n(np.array([node.bias for node in list(genome.nodes.values())]), 356)
+        # sanity check to make sure NEAT does not generate less params than the net needs
+        weights = self.ensure_length_n(np.array([conn.weight for conn in list(genome.connections.values())]), 2880)
+        biases = self.ensure_length_n(np.array([node.bias for node in list(genome.nodes.values())]), 2880)
+        conv1_params_cnt = genome_config.num_hidden * genome_config.num_inputs
 
-        new_weight_values = torch.tensor(weights.reshape((genome_config.num_outputs, genome_config.num_inputs)), dtype=torch.float).to(self.device)
-        new_bias_values = torch.tensor(biases, dtype=torch.float).to(self.device)
-        self.model.conv1.lin.weight = torch.nn.Parameter(new_weight_values)
-        self.model.conv1.bias = torch.nn.Parameter(new_bias_values)
+        conv1_weights = torch.tensor(weights[:conv1_params_cnt].reshape((genome_config.num_hidden, genome_config.num_inputs)), dtype=torch.float).to(self.device)
+        conv1_biases = torch.tensor(biases[:genome_config.num_hidden], dtype=torch.float).to(self.device)
+        self.model.conv1.lin.weight = torch.nn.Parameter(conv1_weights)
+        self.model.conv1.bias = torch.nn.Parameter(conv1_biases)
 
-        # new_weight_values = torch.tensor(np.array([conn.weight for conn in list(genome.connections.values())[conns_in_conv1:]]).reshape((genome_config.num_outputs, genome_config.num_hidden))).to(self.device)
-        # new_bias_values = torch.tensor([node.bias for node in list(genome.nodes.values())[:genome_config.num_outputs]]).to(self.device)
-        # self.model.conv2.lin.weight = torch.nn.Parameter(new_weight_values)
-        # self.model.conv2.bias = torch.nn.Parameter(new_bias_values)
+        conv2_weights = torch.tensor(weights[conv1_params_cnt:].reshape((genome_config.num_outputs, genome_config.num_hidden)), dtype=torch.float).to(self.device)
+        conv2_biases = torch.tensor(biases[genome_config.num_hidden:genome_config.num_hidden+genome_config.num_outputs], dtype=torch.float).to(self.device)
+        self.model.conv2.lin.weight = torch.nn.Parameter(conv2_weights)
+        self.model.conv2.bias = torch.nn.Parameter(conv2_biases)
 
 
     @staticmethod

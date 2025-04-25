@@ -44,7 +44,7 @@ node_add_prob           = 0.0
 node_delete_prob        = 0.0
 
 # network parameters
-num_hidden              = 0
+num_hidden              = 16
 # number of input features per node
 # num_inputs              = 51
 num_inputs              = 178

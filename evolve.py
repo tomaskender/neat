@@ -76,6 +76,8 @@ def eval_genome(genome, config):
         # delete previous benchmark log
         BENCH_RESULTS.unlink(missing_ok=True)
 
+        # while 1:
+        #     time.sleep(1)
         completed_process = subprocess.run(
             f"cd {HOME_DIR} && {get_benchmark_cmd(benchmark)}",
             stdout=sys.stdout,
@@ -83,8 +85,6 @@ def eval_genome(genome, config):
             text=True,
             shell=True
         )
-        # while 1:
-        #     time.sleep(1)
         LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
         LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
