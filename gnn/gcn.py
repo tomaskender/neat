@@ -1,12 +1,6 @@
-import logging
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-
-
-logging.basicConfig(level=logging.DEBUG)
-LOGGER = logging.getLogger("GCN")
 
 
 class GCN(torch.nn.Module):
