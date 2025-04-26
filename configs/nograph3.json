@@ -1,0 +1,28 @@
+{
+    "metadata": {
+        "generation_id": 5,
+        "genome_id": 8
+    },
+    "nodes": [
+        {"key":0, "bias": 0.11192630061468925, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+        {"key":19, "bias": 0.19772370915068024, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+        {"key":20, "bias": 0.5847598574704632, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+        {"key":21, "bias": -0.621251418574242, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"}
+    ],
+    "connections": [
+        {"key": [-4, 19], "weight": 1.2060906167399126, "enabled": true},
+        {"key": [-4, 21], "weight": 0.5018486087518446, "enabled": true},
+        {"key": [-3, 19], "weight": -1.2787000805629294, "enabled": true},
+        {"key": [-3, 20], "weight": -0.12097379332717328, "enabled": true},
+        {"key": [-3, 21], "weight": -0.5644932430153049, "enabled": true},
+        {"key": [-2, 19], "weight": 0.7193030275720281, "enabled": true},
+        {"key": [-2, 20], "weight": 2.695973592082214, "enabled": true},
+        {"key": [-2, 21], "weight": -0.6594452729848267, "enabled": true},
+        {"key": [-1, 19], "weight": 0.08072285182496941, "enabled": false},
+        {"key": [-1, 20], "weight": -1.061686422786101, "enabled": true},
+        {"key": [-1, 21], "weight": 0.0442019504991032, "enabled": true},
+        {"key": [19, 0], "weight": -0.1503055118093921, "enabled": true},
+        {"key": [20, 0], "weight": 1.9458981401975117, "enabled": true},
+        {"key": [21, 0], "weight": -0.48857202553669277, "enabled": true}
+    ]
+}
