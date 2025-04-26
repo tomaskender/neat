@@ -38,8 +38,10 @@ class GraphNetwork(object):
 
     def set_parameters(self, genome_config, genome):
         # sanity check to make sure NEAT does not generate less params than the net needs
-        weights = self.ensure_length_n(np.array([conn.weight for conn in list(genome.connections.values())]), 2880)
-        biases = self.ensure_length_n(np.array([node.bias for node in list(genome.nodes.values())]), 2880)
+        conv1_params_cnt = genome_config.num_hidden * genome_config.num_inputs
+        all_params_cnt = conv1_params_cnt + genome_config.num_hidden * genome_config.num_outputs
+        weights = self.ensure_length_n(np.array([conn.weight for conn in list(genome.connections.values())]), all_params_cnt)
+        biases = self.ensure_length_n(np.array([node.bias for node in list(genome.nodes.values())]), all_params_cnt)
         conv1_params_cnt = genome_config.num_hidden * genome_config.num_inputs
 
         conv1_weights = torch.tensor(weights[:conv1_params_cnt].reshape((genome_config.num_hidden, genome_config.num_inputs)), dtype=torch.float).to(self.device)

@@ -6,9 +6,9 @@ reset_on_extinction   = False
 
 [DefaultGenome]
 # node activation options
-activation_default      = softmax
+activation_default      = sigmoid
 activation_mutate_rate  = 0.0
-activation_options      = softmax
+activation_options      = sigmoid
 
 # node aggregation options
 aggregation_default     = sum
@@ -48,8 +48,7 @@ num_hidden              = 16
 # number of input features per node
 # num_inputs              = 51
 num_inputs              = 178
-# number of outputs, probabilities add up to 1, so for inlining we want 2, one for inlining, one for not
-num_outputs             = 2
+num_outputs             = 1
 
 # node response options
 response_init_mean      = 1.0

@@ -15,5 +15,5 @@ class GCN(torch.nn.Module):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = self.conv2(x, edge_index)
-        y = F.softmax(x, dim=1)
+        y = F.sigmoid(x)
         return y
