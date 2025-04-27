@@ -67,7 +67,7 @@ def eval_genome(genome, config):
     LOGGER.info("Verified connectivity to endpoint")
 
     start = time.perf_counter()
-    fitness = 0
+    fitness = 0.0
 
     for benchmark in BENCHMARKS:
         # run benchmark, graal inliner uses endpoint running on `server.config.port`
@@ -86,7 +86,6 @@ def eval_genome(genome, config):
             shell=True
         )
         LOGGER.info(f"Benchmarking subprocess completed with {completed_process.returncode}")
-        LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
         stats = {}
         if completed_process.returncode == 0:
@@ -104,7 +103,7 @@ def eval_genome(genome, config):
             stats = dict.fromkeys(BENCHMARK_METRICS, 999_999_999)
 
         fitness += stats["reachable-methods"]
-
+    LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
     # Remove endpoint after benchmarking is done
     remove_endpoint(port)
@@ -112,6 +111,7 @@ def eval_genome(genome, config):
     time.sleep(2)
 
     # workaround due to NEAT ignoring activation setting in config; always perform fitness maximization
+    genome.fitness = -fitness
     return -fitness
 
 
