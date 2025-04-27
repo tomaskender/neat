@@ -43,8 +43,12 @@ async def build_network_and_deploy(genome, config, port):
     app = create_app(net, USE_GRAPHS)
     await deploy_endpoint(app, port)
 
-
 def eval_genome(genome, config):
+    global cache
+    if genome.fitness is not None:
+        LOGGER.info(f"Found cached genome {genome.key} with fitness {genome.fitness}. Skipping re-evaluation.")
+        return genome.fitness
+
     LOGGER.info(f"Scheduling network endpoint deployment")
     port = 8001
     loop = asyncio.new_event_loop()
@@ -67,7 +71,6 @@ def eval_genome(genome, config):
     LOGGER.info("Verified connectivity to endpoint")
 
     start = time.perf_counter()
-    fitness = 0.0
 
     for benchmark in BENCHMARKS:
         # run benchmark, graal inliner uses endpoint running on `server.config.port`
@@ -105,12 +108,12 @@ def eval_genome(genome, config):
         fitness += stats["reachable-methods"]
     LOGGER.info(f"Benchmarking took {time.perf_counter()-start}s")
 
-    # Remove endpoint after benchmarking is done
+    # remove endpoint after benchmarking is done
     remove_endpoint(port)
     task.cancel()
     time.sleep(2)
 
-    # workaround due to NEAT ignoring activation setting in config; always perform fitness maximization
+    # workaround due to NEAT ignoring activation setting in config: always perform fitness maximization for negative fitness
     genome.fitness = -fitness
     return -fitness
 
