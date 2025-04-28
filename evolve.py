@@ -71,6 +71,7 @@ def eval_genome(genome, config):
     LOGGER.info("Verified connectivity to endpoint")
 
     start = time.perf_counter()
+    fitness = 0.0
 
     for benchmark in BENCHMARKS:
         # run benchmark, graal inliner uses endpoint running on `server.config.port`
