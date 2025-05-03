@@ -19,7 +19,7 @@ class GraphNetwork(object):
 
     def activate(self, nodes: np.ndarray, edges: np.ndarray):
         # data_start = time.perf_counter_ns()
-        data = Data(x=torch.tensor(nodes, dtype=torch.float), edge_index=torch.tensor(edges, dtype=torch.int8)).to(self.device)
+        data = Data(x=torch.tensor(nodes, dtype=torch.float), edge_index=torch.tensor(edges, dtype=torch.int16)).to(self.device)
         # LOGGER.info(f"tensor creation: {(time.perf_counter_ns()-data_start)/1000000} ms")
         # infer_start = time.perf_counter_ns()
         with torch.no_grad():
