@@ -1,26 +1,27 @@
 {
     "metadata": {
         "generation_id": 5,
-        "genome_id": 10
+        "genome_id": 10,
+        "graph_mode": true
     },
     "nodes": [
-		{"key":0, "bias":1.8425282711354818, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":33, "bias":0.11749185002980464, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":34, "bias":1.2223577684305877, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":35, "bias":1.6157201479506438, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":36, "bias":2.3952958844024312, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":37, "bias":0.033355733506448715, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":38, "bias":0.20442936902513043, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":39, "bias":-0.49327371109370727, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":40, "bias":-0.09888046644983217, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":41, "bias":0.0059214235526621195, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":42, "bias":1.060850659530911, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":43, "bias":-0.999170738333427, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":44, "bias":-0.8758316162714482, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":45, "bias":2.30819745691839, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":46, "bias":0.281348519748582, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":47, "bias":0.3465455034459446, "activation": "sigmoid", "aggregation": "sum"},
-		{"key":48, "bias":-0.1581391926966752, "activation": "sigmoid", "aggregation": "sum"}
+		{"key":0, "bias":1.8425282711354818, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":33, "bias":0.11749185002980464, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":34, "bias":1.2223577684305877, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":35, "bias":1.6157201479506438, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":36, "bias":2.3952958844024312, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":37, "bias":0.033355733506448715, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":38, "bias":0.20442936902513043, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":39, "bias":-0.49327371109370727, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":40, "bias":-0.09888046644983217, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":41, "bias":0.0059214235526621195, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":42, "bias":1.060850659530911, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":43, "bias":-0.999170738333427, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":44, "bias":-0.8758316162714482, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":45, "bias":2.30819745691839, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":46, "bias":0.281348519748582, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":47, "bias":0.3465455034459446, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
+		{"key":48, "bias":-0.1581391926966752, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"}
 	],
 	"connections": [
 		{"key":[-178, 33], "weight":1.2502679058235588, "enabled":true},

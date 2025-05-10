@@ -34,13 +34,13 @@ def get_benchmark_cmd(benchmark):
     return "mx --java-home={} --env ni-ce benchmark \"renaissance-native-image:{}\"  --  --jvm=native-image --jvm-config=default-ce -Dnative-image.benchmark.extra-image-build-argument=--parallelism=12".format(os.getenv("JAVA_HOME"), benchmark)
 
 
-async def build_network_and_deploy(genome, config, port):
-    if USE_GRAPHS:
+async def build_network_and_deploy(genome, config, port, is_graph_mode):
+    if is_graph_mode:
         net = GraphNetwork.create(genome, config)
     else:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    app = create_app(net, USE_GRAPHS)
+    app = create_app(net, is_graph_mode)
     await deploy_endpoint(app, port)
 
 def eval_genome(genome, config):
@@ -52,7 +52,7 @@ def eval_genome(genome, config):
     LOGGER.info(f"Scheduling network endpoint deployment")
     port = 8001
     loop = asyncio.new_event_loop()
-    task = loop.create_task(build_network_and_deploy(genome, config, port))
+    task = loop.create_task(build_network_and_deploy(genome, config, port, USE_GRAPHS))
     thread = threading.Thread(target=loop.run_forever)
     thread.start()
     time.sleep(2)

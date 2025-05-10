@@ -3,11 +3,9 @@ import asyncio
 from distutils.util import strtobool
 import json
 import logging
-import os
 from pathlib import Path
 import threading
 import time
-from dotenv import load_dotenv
 import neat
 import neat.genome
 import requests
@@ -16,9 +14,6 @@ from urllib3 import Retry
 from api import remove_endpoint
 from evolve import build_network_and_deploy
 
-
-load_dotenv(override=True)
-USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("INFERE")
 
@@ -30,10 +25,14 @@ if __name__ == "__main__":
     parser.add_argument('filename', help='Path to JSON containing config of inlining model')           # positional argument
     args = parser.parse_args()
 
-    LOGGER.info("Starting API with pre-trained network.")
+    genome_cfg = json.load(open(args.filename))
+    genome = neat.DefaultGenome(1)
     port = 8001
 
-    if USE_GRAPHS:
+    is_graph_mode = bool(genome_cfg["metadata"]["graph_mode"]) is True
+    LOGGER.info("Starting API with pre-trained network in {} mode.".format("graph" if is_graph_mode else "legacy"))
+
+    if genome_cfg["metadata"]["graph_mode"] is True:
         config_file = Path(__file__).parent / 'config-gnn'
     else:
         config_file = Path(__file__).parent / 'config-feedforward'
@@ -41,9 +40,6 @@ if __name__ == "__main__":
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
     
-    genome_cfg = json.load(open(args.filename))
-    genome = neat.DefaultGenome(1)
-
     genome.nodes = {}
     for node in genome_cfg["nodes"]:
         node_key = node["key"]
@@ -64,7 +60,7 @@ if __name__ == "__main__":
         genome.connections[conn_key] = conn
 
     loop = asyncio.new_event_loop()
-    task = loop.create_task(build_network_and_deploy(genome, config, port))
+    task = loop.create_task(build_network_and_deploy(genome, config, port, is_graph_mode))
     thread = threading.Thread(target=loop.run_forever)
     thread.start()
     time.sleep(2)

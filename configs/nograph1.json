@@ -1,7 +1,8 @@
 {
     "metadata": {
         "generation_id": 5,
-        "genome_id": 5
+        "genome_id": 5,
+        "graph_mode": false
     },
     "nodes": [
         {"key":0, "bias": -0.9828467009629278, "response": 1.0, "activation": "sigmoid", "aggregation": "sum"},
