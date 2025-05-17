@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
                     prog='Infere',
                     description='Deploy inlining model to API for inference')
-    parser.add_argument('filename', help='Path to JSON containing config of inlining model')           # positional argument
+    parser.add_argument('filename', help='Path to JSON containing config of inlining model')
     args = parser.parse_args()
 
     genome_cfg = json.load(open(args.filename))
