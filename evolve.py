@@ -80,8 +80,6 @@ def eval_genome(genome, config):
         # delete previous benchmark log
         BENCH_RESULTS.unlink(missing_ok=True)
 
-        # while 1:
-        #     time.sleep(1)
         completed_process = subprocess.run(
             f"cd {HOME_DIR} && {get_benchmark_cmd(benchmark)}",
             stdout=sys.stdout,
@@ -120,16 +118,13 @@ def eval_genome(genome, config):
 
 
 def run(config_file):
-    # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
 
-    # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
     LOGGER.info("Initial population has been created.")
 
-    # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
@@ -140,11 +135,6 @@ def run(config_file):
     winner = p.run(pe.evaluate, 5)
 
     LOGGER.info(f"Best genome: {winner}")
-
-    # node_names = {-1: 'A', -2: 'B', -3: 'C', -4: 'D', 0: 'Inline'}
-    # visualize.draw_net(config, winner, True, node_names=node_names, prune_unused=True)
-    # visualize.plot_stats(stats, ylog=False, view=True)
-    # visualize.plot_species(stats, view=True)
 
 
 if __name__ == '__main__':

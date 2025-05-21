@@ -16,7 +16,6 @@ from typing import Dict, Any
 load_dotenv(override=True)
 USE_GRAPHS = bool(strtobool(os.getenv('USE_GRAPHS', 'False')))
 if USE_GRAPHS:
-    # PARAMETERS_REQUIRED = 51
     PARAMETERS_REQUIRED = 178
 else:
     PARAMETERS_REQUIRED = 4
@@ -29,13 +28,10 @@ def create_app(network, use_graphs):
     app = FastAPI()
     app.shutdown = asyncio.Event()
     app.stats = {'inlined': 0, 'not_inlined': 0}
-    # app.nodes = dict.fromkeys(list(range(PARAMETERS_REQUIRED)), 0)
     LOGGER.info("Creating endpoint in " + ("graph input mode" if use_graphs else "legacy baseline mode"))
 
     @app.post(f"/predict")
     async def predict(data: Dict[str, Any]):
-        # for n in data["nodes"]:
-        #     app.nodes[n["nodeType"]] = app.nodes.get(n["nodeType"], 0) + 1
         # start = time.perf_counter_ns()
         if use_graphs:
             if len(data) != 2 or not data["nodes"] or not data["edges"]:
